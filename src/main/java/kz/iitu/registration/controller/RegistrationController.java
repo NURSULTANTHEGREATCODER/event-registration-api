@@ -6,6 +6,7 @@ import kz.iitu.registration.service.EventService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
 
 import java.util.Map;
 import java.util.List;
@@ -40,10 +41,18 @@ public class RegistrationController {
     }
 
     // GET /api/events
+
     @GetMapping("/events")
-    public List<EventInfo> getEvents() {
-        return eventService.getAllEvents();
+    public List<EventInfo> getEvents(
+            @RequestParam(required = false) String title
+    ) {
+        if (title == null || title.isBlank()) {
+            return eventService.getAllEvents();
+        }
+
+        return eventService.searchEvents(title);
     }
+
 
     // GET /api/info
     @GetMapping("/info")
@@ -68,4 +77,65 @@ public class RegistrationController {
 
         return ResponseEntity.ok(event);
     }
+
+
+    @PostMapping("/events")
+    public ResponseEntity<?> createEvent(
+            @RequestBody EventInfo event
+    ) {
+        if (event.title() == null || event.title().isBlank()
+                || event.location() == null || event.location().isBlank()) {
+
+            return ResponseEntity.badRequest()
+                    .body("Title and location cannot be empty");
+        }
+
+        EventInfo createdEvent = eventService.createEvent(event);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(createdEvent);
+    }
+
+
+    @PutMapping("/events/{id}")
+    public ResponseEntity<?> updateEvent(
+            @PathVariable Long id,
+            @RequestBody EventInfo event
+    ) {
+        if (event.title() == null || event.title().isBlank()
+                || event.location() == null || event.location().isBlank()) {
+
+            return ResponseEntity.badRequest()
+                    .body("Title and location cannot be empty");
+        }
+
+        EventInfo updatedEvent = eventService.updateEvent(id, event);
+
+        if (updatedEvent == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(updatedEvent);
+    }
+
+
+    @DeleteMapping("/events/{id}")
+    public ResponseEntity<Void> deleteEvent(
+            @PathVariable Long id
+    ) {
+        boolean deleted = eventService.deleteEvent(id);
+
+        if (!deleted) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.noContent().build();
+    }
+
+
+
+
+
+
+
 }
