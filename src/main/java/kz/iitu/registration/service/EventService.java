@@ -1,26 +1,20 @@
 
 package kz.iitu.registration.service;
 
-import kz.iitu.registration.model.EventInfo;
+import kz.iitu.registration.model.Event;
+import kz.iitu.registration.repository.EventRepository;
+
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class EventService {
 
-    // Mutable list that stores events in memory
-    private final List<EventInfo> events = new ArrayList<>();
+    private final EventRepository eventRepository;
 
-    // Server-side ID counter
-    private long nextId = 4L;
-
-    // Constructor: initialize sample events
-    public EventService() {
-        events.add(new EventInfo(1L, "Web Design Workshop", "Almaty"));
-        events.add(new EventInfo(2L, "JavaScript Quiz", "Astana"));
-        events.add(new EventInfo(3L, "IT Career Talk", "Shymkent"));
+    public EventService(EventRepository eventRepository) {
+        this.eventRepository = eventRepository;
     }
 
     public String getWelcomeMessage() {
@@ -28,64 +22,54 @@ public class EventService {
     }
 
     // GET: return all events
-    public List<EventInfo> getAllEvents() {
-        return new ArrayList<>(events);
+    public List<Event> getAllEvents() {
+        return eventRepository.findAll();
     }
 
     // GET: find event by ID
-    public EventInfo getEventById(Long id) {
-        return events.stream()
-                .filter(event -> event.id().equals(id))
-                .findFirst()
-                .orElse(null);
+    public Event getEventById(Long id) {
+        return eventRepository.findById(id).orElse(null);
     }
 
     // GET: search events by title
-    public List<EventInfo> searchEvents(String title) {
-        return events.stream()
-                .filter(event -> event.title()
-                        .toLowerCase()
-                        .contains(title.toLowerCase()))
-                .toList();
+    public List<Event> searchEvents(String title) {
+        return eventRepository.findByTitleContainingIgnoreCase(title);
     }
 
     // POST: create a new event
-    public EventInfo createEvent(EventInfo event) {
-        EventInfo newEvent = new EventInfo(
-                nextId++,
-                event.title(),
-                event.location()
-        );
+    public Event createEvent(Event event) {
 
-        events.add(newEvent);
+        // Ignore client-provided ID
+        event.setId(null);
 
-        return newEvent;
+        return eventRepository.save(event);
     }
 
     // PUT: update an existing event
-    public EventInfo updateEvent(Long id, EventInfo updatedEvent) {
+    public Event updateEvent(Long id, Event updatedEvent) {
 
-        for (int i = 0; i < events.size(); i++) {
+        Event existingEvent = eventRepository.findById(id)
+                .orElse(null);
 
-            if (events.get(i).id().equals(id)) {
-
-                EventInfo event = new EventInfo(
-                        id,
-                        updatedEvent.title(),
-                        updatedEvent.location()
-                );
-
-                events.set(i, event);
-
-                return event;
-            }
+        if (existingEvent == null) {
+            return null;
         }
 
-        return null;
+        existingEvent.setTitle(updatedEvent.getTitle());
+        existingEvent.setLocation(updatedEvent.getLocation());
+
+        return eventRepository.save(existingEvent);
     }
 
     // DELETE: remove event by ID
     public boolean deleteEvent(Long id) {
-        return events.removeIf(event -> event.id().equals(id));
+
+        if (!eventRepository.existsById(id)) {
+            return false;
+        }
+
+        eventRepository.deleteById(id);
+
+        return true;
     }
 }

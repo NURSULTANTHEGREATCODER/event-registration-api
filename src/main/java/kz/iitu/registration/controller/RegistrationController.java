@@ -1,6 +1,7 @@
+
 package kz.iitu.registration.controller;
 
-import kz.iitu.registration.model.EventInfo;
+import kz.iitu.registration.model.Event;
 import kz.iitu.registration.service.EventService;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +27,6 @@ public class RegistrationController {
     @Value("${app.semester}")
     private String semester;
 
-    // Constructor-based Dependency Injection
     public RegistrationController(EventService eventService) {
         this.eventService = eventService;
     }
@@ -41,9 +41,8 @@ public class RegistrationController {
     }
 
     // GET /api/events
-
     @GetMapping("/events")
-    public List<EventInfo> getEvents(
+    public List<Event> getEvents(
             @RequestParam(required = false) String title
     ) {
         if (title == null || title.isBlank()) {
@@ -52,7 +51,6 @@ public class RegistrationController {
 
         return eventService.searchEvents(title);
     }
-
 
     // GET /api/info
     @GetMapping("/info")
@@ -64,12 +62,12 @@ public class RegistrationController {
         );
     }
 
-    // BONUS: GET /api/events/{id}
+    // GET /api/events/{id}
     @GetMapping("/events/{id}")
-    public ResponseEntity<EventInfo> getEventById(
+    public ResponseEntity<Event> getEventById(
             @PathVariable Long id
     ) {
-        EventInfo event = eventService.getEventById(id);
+        Event event = eventService.getEventById(id);
 
         if (event == null) {
             return ResponseEntity.notFound().build();
@@ -78,38 +76,40 @@ public class RegistrationController {
         return ResponseEntity.ok(event);
     }
 
-
+    // POST /api/events
     @PostMapping("/events")
     public ResponseEntity<?> createEvent(
-            @RequestBody EventInfo event
+            @RequestBody Event event
     ) {
-        if (event.title() == null || event.title().isBlank()
-                || event.location() == null || event.location().isBlank()) {
+        if (event.getTitle() == null || event.getTitle().isBlank()
+                || event.getLocation() == null
+                || event.getLocation().isBlank()) {
 
             return ResponseEntity.badRequest()
                     .body("Title and location cannot be empty");
         }
 
-        EventInfo createdEvent = eventService.createEvent(event);
+        Event createdEvent = eventService.createEvent(event);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(createdEvent);
     }
 
-
+    // PUT /api/events/{id}
     @PutMapping("/events/{id}")
     public ResponseEntity<?> updateEvent(
             @PathVariable Long id,
-            @RequestBody EventInfo event
+            @RequestBody Event event
     ) {
-        if (event.title() == null || event.title().isBlank()
-                || event.location() == null || event.location().isBlank()) {
+        if (event.getTitle() == null || event.getTitle().isBlank()
+                || event.getLocation() == null
+                || event.getLocation().isBlank()) {
 
             return ResponseEntity.badRequest()
                     .body("Title and location cannot be empty");
         }
 
-        EventInfo updatedEvent = eventService.updateEvent(id, event);
+        Event updatedEvent = eventService.updateEvent(id, event);
 
         if (updatedEvent == null) {
             return ResponseEntity.notFound().build();
@@ -118,7 +118,7 @@ public class RegistrationController {
         return ResponseEntity.ok(updatedEvent);
     }
 
-
+    // DELETE /api/events/{id}
     @DeleteMapping("/events/{id}")
     public ResponseEntity<Void> deleteEvent(
             @PathVariable Long id
@@ -131,11 +131,4 @@ public class RegistrationController {
 
         return ResponseEntity.noContent().build();
     }
-
-
-
-
-
-
-
 }
